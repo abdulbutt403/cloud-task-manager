@@ -1,0 +1,45 @@
+
+services:
+  frontend:
+    build:
+      context: ./client
+    container_name: task_frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./server
+    container_name: task_backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./server/.env
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: enterprise_postgres
+    environment:
+      POSTGRES_USER: postgres_admin
+      POSTGRES_PASSWORD: secure_dev_password
+      POSTGRES_DB: core_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: enterprise_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,136 @@
+<main class="workspace">
+  <header class="page-header">
+    <div class="brand-mark" aria-hidden="true">✳</div>
+    <div>
+      <span class="eyebrow">YOUR PERSONAL WORKSPACE</span>
+      <h1>Work in <span>motion.</span></h1>
+      <p class="intro">Move each task forward, one small win at a time.</p>
+    </div>
+  </header>
+
+  <section class="composer" aria-label="Add a task">
+    <div class="composer-icon" aria-hidden="true">＋</div>
+    <div class="composer-field">
+      <label for="new-task">Add a task to your board</label>
+      <input
+        id="new-task"
+        type="text"
+        [ngModel]="newTaskTitle()"
+        (ngModelChange)="newTaskTitle.set($event)"
+        (keyup.enter)="addTask()"
+        placeholder="What would you like to get done?"
+      />
+    </div>
+    <button type="button" (click)="addTask()" [disabled]="!newTaskTitle().trim()">
+      Add task <span aria-hidden="true">↗</span>
+    </button>
+  </section>
+
+  @if (loading$ | async) {
+    <p class="notice loading"><span class="loader" aria-hidden="true"></span>Updating your board…</p>
+  }
+
+  @if (error$ | async; as error) {
+    <p class="notice error" role="alert">{{ error }}</p>
+  }
+
+  @if (tasks$ | async; as tasks) {
+    <section class="board-section" aria-labelledby="board-heading">
+      <div class="board-heading">
+        <div>
+          <span class="eyebrow">THE BIG AND THE SMALL</span>
+          <h2 id="board-heading">Your board <span class="count">{{ tasks.length }}</span></h2>
+        </div>
+        <p class="board-hint"><span aria-hidden="true">↔</span> Drag cards between columns</p>
+      </div>
+
+      <div class="board-scroll">
+        <div class="board" aria-label="Task board">
+          @for (column of columns; track column.id) {
+            <section class="board-column" [attr.data-status]="column.id" [attr.aria-labelledby]="'column-' + column.id">
+              <header class="column-heading">
+                <div class="column-title-wrap">
+                  <span class="column-icon" aria-hidden="true">{{ column.icon }}</span>
+                  <div>
+                    <h3 [id]="'column-' + column.id">{{ column.title }}</h3>
+                    <p>{{ column.subtitle }}</p>
+                  </div>
+                </div>
+                <span class="column-count">{{ tasksForColumn(tasks, column.id).length }}</span>
+              </header>
+
+              <div
+                class="column-dropzone"
+                [class.drag-over]="dragOverStatus() === column.id"
+                (dragover)="allowDrop($event, column.id)"
+                (dragleave)="leaveColumn($event, column.id)"
+                (drop)="dropTask($event, column.id)"
+              >
+                @if (tasksForColumn(tasks, column.id).length) {
+                  @for (task of tasksForColumn(tasks, column.id); track task.id; let index = $index) {
+                    <article
+                      class="task-card"
+                      [class.is-completed]="task.status === 'done'"
+                      [class.is-dragging]="draggingTaskId() === task.id"
+                      draggable="true"
+                      (dragstart)="startDrag($event, task.id)"
+                      (dragend)="endDrag()"
+                    >
+                      <div class="card-topline">
+                        <span class="task-number">TASK {{ (index + 1).toString().padStart(2, '0') }}</span>
+                        <span class="drag-handle" aria-hidden="true">⠿</span>
+                      </div>
+
+                      @if (editingTaskId() === task.id) {
+                        <input
+                          class="edit-input"
+                          [ngModel]="editingTitle()"
+                          (ngModelChange)="editingTitle.set($event)"
+                          (keyup.enter)="saveTask(task.id)"
+                          aria-label="Edit task title"
+                        />
+                      } @else {
+                        <h4 class="task-title">{{ task.title }}</h4>
+                      }
+
+                      <div class="card-footer">
+                        <div class="task-actions">
+                          @if (editingTaskId() === task.id) {
+                            <button class="text-action save-action" type="button" (click)="saveTask(task.id)">Save</button>
+                            <button class="text-action" type="button" (click)="editingTaskId.set(null)">Cancel</button>
+                          } @else {
+                            <button class="icon-button" type="button" (click)="startEditing(task.id, task.title)" aria-label="Edit task" title="Edit">✎</button>
+                          }
+                          <button class="icon-button danger" type="button" (click)="deleteTask(task.id)" aria-label="Delete task" title="Delete">⌫</button>
+                        </div>
+                        @if (previousStatus(task.status); as previous) {
+                          <button class="move-action backward-action" type="button" (click)="moveTask(task.id, previous)">
+                            <span aria-hidden="true">←</span> {{ statusLabel(previous) }}
+                          </button>
+                        }
+                        @if (nextStatus(task.status); as next) {
+                          <button class="move-action" type="button" (click)="moveTask(task.id, next)">
+                            {{ statusLabel(next) }} <span aria-hidden="true">→</span>
+                          </button>
+                        } @else {
+                          <span class="done-label"><span aria-hidden="true">✓</span> Complete</span>
+                        }
+                      </div>
+                    </article>
+                  }
+                } @else {
+                  <div class="column-empty">
+                    <span aria-hidden="true">{{ column.emptyIcon }}</span>
+                    <p>{{ column.emptyMessage }}</p>
+                  </div>
+                }
+              </div>
+            </section>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <footer class="page-footer"><span>MADE FOR YOUR NEXT SMALL WIN</span><span>✳</span></footer>
+</main>
