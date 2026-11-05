@@ -1,0 +1,56 @@
+
+name: Fullstack CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configure Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 3. Angular - Install dependencies
+      - name: Install client dependencies
+        working-directory: ./client
+        run: npm ci
+
+      # 4. Angular - Build
+      - name: Build Angular application
+        working-directory: ./client
+        run: npm run build
+
+      # 5. Angular - Test
+      - name: Test Angular application
+        working-directory: ./client
+        run: npm test -- --watch=false
+
+      # 6. NestJS - Install dependencies
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      # 7. NestJS - Build
+      - name: Build NestJS application
+        working-directory: ./server
+        run: npm run build
+
+      # 8. NestJS - Test
+      - name: Test NestJS application
+        working-directory: ./server
+        run: npm test
